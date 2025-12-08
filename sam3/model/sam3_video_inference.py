@@ -545,6 +545,14 @@ class Sam3VideoInference(Sam3VideoBase):
                 if obj_id in filtered_obj_id_to_mask:
                     del filtered_obj_id_to_mask[obj_id]
 
+        # Offload cached masks to CPU to reduce GPU memory usage on rank 0.
+        # Masks are only needed when building / returning outputs, so keeping
+        # them on CPU does not affect model computation, only I/O.
+        for obj_id, mask in filtered_obj_id_to_mask.items():
+            # Handle both tensors and numpy arrays defensively.
+            if hasattr(mask, "cpu"):
+                filtered_obj_id_to_mask[obj_id] = mask.cpu()
+
         inference_state["cached_frame_outputs"][frame_idx] = filtered_obj_id_to_mask
 
     def _build_tracker_output(
