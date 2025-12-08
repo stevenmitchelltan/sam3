@@ -429,7 +429,10 @@ def _create_tracker_transformer():
 
 
 def build_tracker(
-    apply_temporal_disambiguation: bool, with_backbone: bool = False, compile_mode=None
+    apply_temporal_disambiguation: bool,
+    with_backbone: bool = False,
+    compile_mode=None,
+    num_maskmem: int = 7,
 ) -> Sam3TrackerPredictor:
     """
     Build the SAM3 Tracker module for video tracking.
@@ -448,7 +451,7 @@ def build_tracker(
     # Create the Tracker module
     model = Sam3TrackerPredictor(
         image_size=1008,
-        num_maskmem=7,
+        num_maskmem=num_maskmem,
         backbone=backbone,
         backbone_stride=14,
         transformer=transformer,
@@ -656,6 +659,7 @@ def build_sam3_video_model(
     apply_temporal_disambiguation: bool = True,
     device="cuda" if torch.cuda.is_available() else "cpu",
     compile=False,
+    num_maskmem: int = 7,
 ) -> Sam3VideoInferenceWithInstanceInteractivity:
     """
     Build SAM3 dense tracking model.
@@ -673,7 +677,10 @@ def build_sam3_video_model(
         )
 
     # Build Tracker module
-    tracker = build_tracker(apply_temporal_disambiguation=apply_temporal_disambiguation)
+    tracker = build_tracker(
+        apply_temporal_disambiguation=apply_temporal_disambiguation,
+        num_maskmem=num_maskmem,
+    )
 
     # Build Detector components
     visual_neck = _create_vision_backbone()
@@ -774,6 +781,25 @@ def build_sam3_video_model(
             ckpt = torch.load(f, map_location="cpu", weights_only=True)
         if "model" in ckpt and isinstance(ckpt["model"], dict):
             ckpt = ckpt["model"]
+
+        # Handle maskmem_tpos_enc size mismatch when num_maskmem differs from checkpoint
+        maskmem_key = "tracker.maskmem_tpos_enc"
+        if maskmem_key in ckpt:
+            ckpt_maskmem_shape = ckpt[maskmem_key].shape[0]
+            if ckpt_maskmem_shape != num_maskmem:
+                print(
+                    f"Adjusting {maskmem_key} from checkpoint shape [{ckpt_maskmem_shape}] "
+                    f"to model shape [{num_maskmem}]"
+                )
+                if num_maskmem < ckpt_maskmem_shape:
+                    # Slice: take the first num_maskmem frames
+                    ckpt[maskmem_key] = ckpt[maskmem_key][:num_maskmem]
+                else:
+                    # Pad: repeat the last frame to reach num_maskmem
+                    last_frame = ckpt[maskmem_key][-1:].repeat(
+                        num_maskmem - ckpt_maskmem_shape, 1, 1, 1
+                    )
+                    ckpt[maskmem_key] = torch.cat([ckpt[maskmem_key], last_frame], dim=0)
 
         missing_keys, unexpected_keys = model.load_state_dict(
             ckpt, strict=strict_state_dict_loading
