@@ -660,6 +660,7 @@ def build_sam3_video_model(
     device="cuda" if torch.cuda.is_available() else "cpu",
     compile=False,
     num_maskmem: int = 7,
+    max_num_objects: int = -1,
 ) -> Sam3VideoInferenceWithInstanceInteractivity:
     """
     Build SAM3 dense tracking model.
@@ -744,6 +745,7 @@ def build_sam3_video_model(
             image_mean=(0.5, 0.5, 0.5),
             image_std=(0.5, 0.5, 0.5),
             compile_model=compile,
+            max_num_objects=max_num_objects,
         )
     else:
         # a version without any heuristics for ablation studies
@@ -771,6 +773,7 @@ def build_sam3_video_model(
             image_mean=(0.5, 0.5, 0.5),
             image_std=(0.5, 0.5, 0.5),
             compile_model=compile,
+            max_num_objects=max_num_objects,
         )
 
     # Load checkpoint if provided
