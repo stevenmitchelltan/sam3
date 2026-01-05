@@ -36,6 +36,7 @@ class Sam3VideoPredictor:
         apply_temporal_disambiguation: bool = True,
         num_maskmem: int = 7,
         max_num_objects: int = -1,
+        log_object_counts: bool = False,
     ):
         self.async_loading_frames = async_loading_frames
         self.video_loader_type = video_loader_type
@@ -51,6 +52,7 @@ class Sam3VideoPredictor:
                 apply_temporal_disambiguation=apply_temporal_disambiguation,
                 num_maskmem=num_maskmem,
                 max_num_objects=max_num_objects,
+                log_object_counts=log_object_counts,
             )
             .cuda()
             .eval()

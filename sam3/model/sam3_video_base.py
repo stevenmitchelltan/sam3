@@ -78,6 +78,7 @@ class Sam3VideoBase(nn.Module):
         # bbox heuristic parameters
         reconstruction_bbox_iou_thresh=0.0,
         reconstruction_bbox_det_score=0.0,
+        log_object_counts=False,
     ):
         super().__init__()
         self.detector = detector
@@ -87,6 +88,7 @@ class Sam3VideoBase(nn.Module):
         self.assoc_iou_thresh = assoc_iou_thresh
         self.trk_assoc_iou_thresh = trk_assoc_iou_thresh
         self.new_det_thresh = new_det_thresh
+        self.log_object_counts = log_object_counts
 
         # hotstart parameters
         if hotstart_delay > 0:
@@ -559,9 +561,10 @@ class Sam3VideoBase(nn.Module):
             new_det_num = len(new_det_fa_inds)
             num_obj_dropped_due_to_limit = 0
             if not is_image_only and prev_obj_num + new_det_num > self.max_num_objects:
-                logger.warning(
-                    f"hitting {self.max_num_objects=} with {new_det_num=} and {prev_obj_num=}"
-                )
+                if self.log_object_counts:
+                    logger.warning(
+                        f"hitting {self.max_num_objects=} with {new_det_num=} and {prev_obj_num=}"
+                    )
                 new_det_num_to_keep = self.max_num_objects - prev_obj_num
                 num_obj_dropped_due_to_limit = new_det_num - new_det_num_to_keep
                 new_det_fa_inds = self._drop_new_det_with_obj_limit(

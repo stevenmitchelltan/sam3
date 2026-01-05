@@ -661,6 +661,7 @@ def build_sam3_video_model(
     compile=False,
     num_maskmem: int = 7,
     max_num_objects: int = -1,
+    log_object_counts: bool = False,
 ) -> Sam3VideoInferenceWithInstanceInteractivity:
     """
     Build SAM3 dense tracking model.
@@ -746,6 +747,7 @@ def build_sam3_video_model(
             image_std=(0.5, 0.5, 0.5),
             compile_model=compile,
             max_num_objects=max_num_objects,
+            log_object_counts=log_object_counts,
         )
     else:
         # a version without any heuristics for ablation studies
@@ -774,6 +776,7 @@ def build_sam3_video_model(
             image_std=(0.5, 0.5, 0.5),
             compile_model=compile,
             max_num_objects=max_num_objects,
+            log_object_counts=log_object_counts,
         )
 
     # Load checkpoint if provided
